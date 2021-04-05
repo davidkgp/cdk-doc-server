@@ -2,9 +2,10 @@
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import { CdkDocServerStack } from '../lib/cdk-doc-server-stack';
+import { Tags } from '@aws-cdk/core';
 
 const app = new cdk.App();
-new CdkDocServerStack(app, 'CdkDocServerStack', {
+const myStack = new CdkDocServerStack(app, 'CdkDocServerStack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
@@ -19,3 +20,5 @@ new CdkDocServerStack(app, 'CdkDocServerStack', {
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
+
+Tags.of(myStack).add('App','MyDocServer');

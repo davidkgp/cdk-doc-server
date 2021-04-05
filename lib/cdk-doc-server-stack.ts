@@ -1,5 +1,6 @@
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
+import { Tags } from '@aws-cdk/core';
 
 export class CdkDocServerStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -14,7 +15,9 @@ export class CdkDocServerStack extends cdk.Stack {
       value: docStorageBucket.bucketName,
       exportName: "DocBucketName"
 
-    })
+    });
+
+    Tags.of(docStorageBucket).add('Object','MyDocBucket');
 
   }
 }
