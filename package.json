@@ -21,8 +21,14 @@
     "typescript": "~3.9.7"
   },
   "dependencies": {
+    "@aws-cdk/aws-apigatewayv2": "^1.96.0",
+    "@aws-cdk/aws-apigatewayv2-integrations": "^1.96.0",
+    "@aws-cdk/aws-lambda": "^1.96.0",
     "@aws-cdk/aws-s3": "^1.96.0",
+    "@aws-cdk/aws-s3-deployment": "^1.96.0",
     "@aws-cdk/core": "1.96.0",
+    "install": "^0.13.0",
+    "npm": "^7.9.0",
     "source-map-support": "^0.5.16"
   }
 }

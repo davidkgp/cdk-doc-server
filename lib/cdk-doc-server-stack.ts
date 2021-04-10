@@ -1,10 +1,17 @@
+import { HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2';
+import { LambdaProxyIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
+import * as lambda from '@aws-cdk/aws-lambda';
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
 import { Tags } from '@aws-cdk/core';
+import * as path from 'path';
+import * as s3deploy from '@aws-cdk/aws-s3-deployment';
+
 
 export class CdkDocServerStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
 
     const docStorageBucket = new Bucket(this, "DocBucket", 
     {
@@ -18,6 +25,33 @@ export class CdkDocServerStack extends cdk.Stack {
     });
 
     Tags.of(docStorageBucket).add('Object','MyDocBucket');
+
+
+    new s3deploy.BucketDeployment(this, 'deployPDFs', {
+      sources: [s3deploy.Source.asset(path.join(__dirname, '..','pdfs'))],
+      destinationBucket: docStorageBucket
+    });
+
+    const fn = new lambda.Function(this, 'MyDocRetrieveFunction', {
+      runtime: lambda.Runtime.NODEJS_12_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '..','api','getDoc')),
+    });
+
+    Tags.of(fn).add('Object','MyDocLambda');
+
+
+    const docsDefaultIntegration = new LambdaProxyIntegration({
+      handler: fn,
+    });
+    
+    const httpApi = new HttpApi(this, 'HttpApi');
+    
+    httpApi.addRoutes({
+      path: '/docs',
+      methods: [ HttpMethod.GET ],
+      integration: docsDefaultIntegration,
+    });
 
   }
 }
