@@ -1,6 +1,6 @@
 import { HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2';
 import { LambdaProxyIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
-import * as lambda from '@aws-cdk/aws-lambda';
+import * as lambda from '@aws-cdk/aws-lambda-nodejs';
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
 import { RemovalPolicy, Tags } from '@aws-cdk/core';
@@ -34,10 +34,15 @@ export class CdkDocServerStack extends cdk.Stack {
       retainOnDelete: false
     });
 
-    const fn = new lambda.Function(this, 'MyDocRetrieveFunction', {
-      runtime: lambda.Runtime.NODEJS_12_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '..','api','getDoc')),
+    // const fn = new lambda.Function(this, 'MyDocRetrieveFunction', {
+    //   runtime: lambda.Runtime.NODEJS_12_X,
+    //   handler: 'index.handler',
+    //   code: lambda.Code.fromAsset(path.join(__dirname, '..','api','getDocTS')),
+    // });
+
+    const fn = new lambda.NodejsFunction(this, 'MyGetDocsFunction', {
+      entry: path.join(__dirname, '..','api','getDocTS','index.ts'), 
+      handler: 'handler'
     });
 
     Tags.of(fn).add('Object','MyDocLambda');
