@@ -1,9 +1,10 @@
 import S3 from "aws-sdk/clients/s3";
+import {APIGatewayProxyEvent,Context,APIGatewayProxyResult} from "aws-lambda";
 
 const s3 = new S3();
 const bucketName = process.env.MY_DOC_BUCKETNAME;
 
-export const handler = async (event: any = {}): Promise<any> => {
+export const handler = async (event: APIGatewayProxyEvent,context:Context): Promise<APIGatewayProxyResult> => {
   try {
     console.log(`Bucket Name :${bucketName}`);
     const { Contents: docs } = await s3
