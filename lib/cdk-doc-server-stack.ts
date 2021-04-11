@@ -1,13 +1,11 @@
-import { HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2';
-import { LambdaProxyIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
+
 import * as lambda from '@aws-cdk/aws-lambda-nodejs';
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
 import { RemovalPolicy, Tags } from '@aws-cdk/core';
 import * as path from 'path';
 import * as s3deploy from '@aws-cdk/aws-s3-deployment';
-import { isMainThread } from 'worker_threads';
-import * as iam from '@aws-cdk/aws-iam'
+import {DocManagementAPI} from "./api";
 
 
 
@@ -37,53 +35,15 @@ export class CdkDocServerStack extends cdk.Stack {
       retainOnDelete: false
     });
 
-    const fn = new lambda.NodejsFunction(this, 'MyGetDocsFunction', {
-      entry: path.join(__dirname, '..','api','getDocTS','index.ts'), 
-      handler: 'handler',
-      bundling:{
-        externalModules: [
-          'aws-sdk' // Use the 'aws-sdk' available in the Lambda runtime
-        ],
-      },
-      environment :{
-        MY_DOC_BUCKETNAME:docStorageBucket.bucketName
-      }
-      
+
+
+    const lambdaApi= new DocManagementAPI(this,"MyDocManagementAPI",{
+      docBucket: docStorageBucket
     });
 
-    const bucketPermissions = new iam.PolicyStatement();
-    bucketPermissions.addResources(`${docStorageBucket.bucketArn}/*`);
-    bucketPermissions.addActions(`s3:GetObject`,`s3:PutObject`);
-    fn.addToRolePolicy(bucketPermissions);
 
-    const bucketContainerPermissions = new iam.PolicyStatement();
-    bucketContainerPermissions.addResources(docStorageBucket.bucketArn);
-    bucketContainerPermissions.addActions(`s3:ListBucket`);
-    fn.addToRolePolicy(bucketContainerPermissions);
+    Tags.of(lambdaApi).add('Module','MyDocLambda');
 
-    Tags.of(fn).add('Object','MyDocLambda');
-
-
-
-    const getDocsDefaultIntegration = new LambdaProxyIntegration({
-      handler: fn,
-    });
-    
-    const httpApi = new HttpApi(this, 'HttpApi');
-    
-    httpApi.addRoutes({
-      path: '/docs',
-      methods: [ HttpMethod.GET ],
-      integration: getDocsDefaultIntegration,
-    });
-
-    new cdk.CfnOutput(this,"APiName", {
-      value: httpApi.apiEndpoint,
-      exportName: "HttpAPIUrl"
-
-    });
-
-    
 
   }
 }
