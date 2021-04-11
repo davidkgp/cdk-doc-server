@@ -6,6 +6,9 @@ import * as cdk from '@aws-cdk/core';
 import { RemovalPolicy, Tags } from '@aws-cdk/core';
 import * as path from 'path';
 import * as s3deploy from '@aws-cdk/aws-s3-deployment';
+import { isMainThread } from 'worker_threads';
+import * as iam from '@aws-cdk/aws-iam'
+
 
 
 export class CdkDocServerStack extends cdk.Stack {
@@ -34,16 +37,29 @@ export class CdkDocServerStack extends cdk.Stack {
       retainOnDelete: false
     });
 
-    // const fn = new lambda.Function(this, 'MyDocRetrieveFunction', {
-    //   runtime: lambda.Runtime.NODEJS_12_X,
-    //   handler: 'index.handler',
-    //   code: lambda.Code.fromAsset(path.join(__dirname, '..','api','getDocTS')),
-    // });
-
     const fn = new lambda.NodejsFunction(this, 'MyGetDocsFunction', {
       entry: path.join(__dirname, '..','api','getDocTS','index.ts'), 
-      handler: 'handler'
+      handler: 'handler',
+      bundling:{
+        externalModules: [
+          'aws-sdk' // Use the 'aws-sdk' available in the Lambda runtime
+        ],
+      },
+      environment :{
+        MY_DOC_BUCKETNAME:docStorageBucket.bucketName
+      }
+      
     });
+
+    const bucketPermissions = new iam.PolicyStatement();
+    bucketPermissions.addResources(`${docStorageBucket.bucketArn}/*`);
+    bucketPermissions.addActions(`s3:GetObject`);
+    fn.addToRolePolicy(bucketPermissions);
+
+    const bucketContainerPermissions = new iam.PolicyStatement();
+    bucketContainerPermissions.addResources(docStorageBucket.bucketArn);
+    bucketContainerPermissions.addActions(`s3:ListBucket`);
+    fn.addToRolePolicy(bucketContainerPermissions);
 
     Tags.of(fn).add('Object','MyDocLambda');
 
