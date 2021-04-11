@@ -53,7 +53,7 @@ export class CdkDocServerStack extends cdk.Stack {
 
     const bucketPermissions = new iam.PolicyStatement();
     bucketPermissions.addResources(`${docStorageBucket.bucketArn}/*`);
-    bucketPermissions.addActions(`s3:GetObject`);
+    bucketPermissions.addActions(`s3:GetObject`,`s3:PutObject`);
     fn.addToRolePolicy(bucketPermissions);
 
     const bucketContainerPermissions = new iam.PolicyStatement();
@@ -64,7 +64,8 @@ export class CdkDocServerStack extends cdk.Stack {
     Tags.of(fn).add('Object','MyDocLambda');
 
 
-    const docsDefaultIntegration = new LambdaProxyIntegration({
+
+    const getDocsDefaultIntegration = new LambdaProxyIntegration({
       handler: fn,
     });
     
@@ -73,7 +74,7 @@ export class CdkDocServerStack extends cdk.Stack {
     httpApi.addRoutes({
       path: '/docs',
       methods: [ HttpMethod.GET ],
-      integration: docsDefaultIntegration,
+      integration: getDocsDefaultIntegration,
     });
 
     new cdk.CfnOutput(this,"APiName", {
