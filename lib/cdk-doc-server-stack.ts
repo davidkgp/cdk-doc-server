@@ -1,11 +1,11 @@
-
-import * as lambda from '@aws-cdk/aws-lambda-nodejs';
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
 import { RemovalPolicy, Tags } from '@aws-cdk/core';
 import * as path from 'path';
 import * as s3deploy from '@aws-cdk/aws-s3-deployment';
 import {DocManagementAPI} from "./api";
+import {DocPutAPI} from "./api-put";
+import {DocWebSocketAPI} from "./api-web";
 
 
 
@@ -43,6 +43,22 @@ export class CdkDocServerStack extends cdk.Stack {
 
 
     Tags.of(lambdaApi).add('Module','MyDocLambda');
+
+    const lambdaPutApi= new DocPutAPI(this,"MyDocPutAPI",{
+      docBucket: docStorageBucket
+    });
+
+
+    Tags.of(lambdaPutApi).add('Module','MyDocRestLambda');
+
+    const lambdaWebsocketApi= new DocWebSocketAPI(this,"MyLambdaSocketAPI",{
+      docBucket: docStorageBucket
+    });
+
+
+    Tags.of(lambdaWebsocketApi).add('Module','MyWebsocketApi');
+
+    
 
 
   }

@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@aws-cdk/assets": "^1.96.0",
+    "@aws-cdk/aws-apigateway": "^1.96.0",
     "@aws-cdk/aws-apigatewayv2": "^1.96.0",
     "@aws-cdk/aws-apigatewayv2-integrations": "^1.96.0",
     "@aws-cdk/aws-iam": "^1.96.0",
