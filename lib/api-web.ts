@@ -5,6 +5,7 @@ import * as apig2 from "@aws-cdk/aws-apigatewayv2";
 import { LambdaWebSocketIntegration } from "@aws-cdk/aws-apigatewayv2-integrations/lib/websocket";
 import { WebSocketStage } from "@aws-cdk/aws-apigatewayv2";
 import * as path from "path";
+import * as iam from '@aws-cdk/aws-iam'
 
 interface DocWebSocketAPIProps {}
 
@@ -18,9 +19,9 @@ export class DocWebSocketAPI extends cdk.Construct {
       handler: "handleWebSocket",
       bundling: {
         externalModules: [
-          "aws-sdk", // Use the 'aws-sdk' available in the Lambda runtime
+          "aws-sdk" // Use the 'aws-sdk' available in the Lambda runtime
         ],
-      },
+      }
     });
 
     const webSocketApi = new apig2.WebSocketApi(this, "myDocWebSocket", {
@@ -52,6 +53,11 @@ export class DocWebSocketAPI extends cdk.Construct {
       exportName: "WebSocketApiURL"
 
     });
+
+    const websocketPermissions = new iam.PolicyStatement();
+    websocketPermissions.addResources(`${webSocketApi.}/*`);
+    websocketPermissions.addActions(`execute-api:ManageConnections`);
+    fn.addToRolePolicy(websocketPermissions);
     
   }
 }
