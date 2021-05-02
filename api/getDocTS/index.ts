@@ -19,6 +19,7 @@ export const handler = async (event: APIGatewayProxyEvent,context:Context): Prom
     console.log(JSON.stringify(docList));
 
     return{
+        headers: {"content-type": "application/json"},
         statusCode: 200,
         body: JSON.stringify(docList)
     };

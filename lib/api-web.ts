@@ -52,5 +52,6 @@ export class DocWebSocketAPI extends cdk.Construct {
       exportName: "WebSocketApiURL"
 
     });
+    
   }
 }

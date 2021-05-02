@@ -1,11 +1,18 @@
 import {APIGatewayProxyEvent,Context,APIGatewayProxyResult} from "aws-lambda";
+import { log } from "console";
 
 export const handleWebSocket = async (event: APIGatewayProxyEvent,context:Context): Promise<APIGatewayProxyResult> => {
   try {
 
+    console.log(event);
+    console.log(context);
+
     const {
       requestContext: { connectionId, routeKey },
     } = event;
+
+    console.log(connectionId);
+    console.log(routeKey);
 
     if (routeKey === "$connect") {
       // handle new connection
