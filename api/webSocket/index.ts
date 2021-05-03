@@ -1,13 +1,17 @@
 import {APIGatewayProxyEvent,Context,APIGatewayProxyResult} from "aws-lambda";
 import { log } from "console";
-//import fetch, { RequestInit, Response } from "node-fetch"
+import fetch, { RequestInit, Response } from "node-fetch"
 import AWS from "aws-sdk";
 
 export const handleWebSocket = async (event: APIGatewayProxyEvent,context:Context): Promise<APIGatewayProxyResult> => {
   try {
 
+    const url="https://" + event.requestContext.domainName 
+    + "/"+event.requestContext.stage;
+
+
     const apig = new AWS.ApiGatewayManagementApi({
-      endpoint: "https://" + event.requestContext.domainName + "/"+event.requestContext.stage
+      endpoint: url
     });
 
 
@@ -31,12 +35,22 @@ export const handleWebSocket = async (event: APIGatewayProxyEvent,context:Contex
 
     if (routeKey === "$connect") {
       console.log("handle new connection");
-      await apig
-      .postToConnection({
-        Data: JSON.stringify(['hello', 'world', 'connect']),
-        ConnectionId: connectionId!
-      })
-      .promise();
+      // await apig
+      // .postToConnection({
+      //   Data: JSON.stringify(['hello', 'world', 'connect']),
+      //   ConnectionId: connectionId!
+      // })
+      // .promise();
+
+      createPost(url+"/"+"@connections"+"/"+connectionId,JSON.stringify(['hello', 'world', 'connect']))
+      .then(response=> {
+        if (!response.ok) {
+          console.log(response);
+          throw new Error(response.statusText)
+        }
+        console.log("Success");
+        console.log(response);
+      });
    
     }
       
@@ -71,12 +85,12 @@ export const handleWebSocket = async (event: APIGatewayProxyEvent,context:Contex
   }
 };
 
-// export async function createPost(url: string,bodyStr:string): Promise<Response> {
-//   const opts: RequestInit = {
-//     method: 'POST',
-//     headers: {"content-type": "application/json"},
-//     body: bodyStr,
-//   };
-//   return fetch(url, opts)
-// }
+export async function createPost(url: string,bodyStr:string): Promise<Response> {
+  const opts: RequestInit = {
+    method: 'POST',
+    headers: {"content-type": "application/json"},
+    body: bodyStr,
+  };
+  return fetch(url, opts)
+}
 

@@ -54,10 +54,10 @@ export class DocWebSocketAPI extends cdk.Construct {
 
     });
 
-    const websocketPermissions = new iam.PolicyStatement();
-    websocketPermissions.addResources(`${webSocketApi.}/*`);
-    websocketPermissions.addActions(`execute-api:ManageConnections`);
-    fn.addToRolePolicy(websocketPermissions);
+    // const websocketPermissions = new iam.PolicyStatement();
+    // websocketPermissions.addResources(`${webSocketApi.}/*`);
+    // websocketPermissions.addActions(`execute-api:ManageConnections`);
+    // fn.addToRolePolicy(websocketPermissions);
     
   }
 }
