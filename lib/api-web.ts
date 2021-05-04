@@ -8,11 +8,15 @@ import * as path from "path";
 import * as iam from '@aws-cdk/aws-iam'
 import { PolicyStatement } from "@aws-cdk/aws-iam";
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
+import { S3EventSource } from "@aws-cdk/aws-lambda-event-sources";
+import * as s3 from '@aws-cdk/aws-s3';
 
-interface DocWebSocketAPIProps {}
+interface DocWebSocketAPIProps {
+  docBucket: s3.Bucket;
+}
 
 export class DocWebSocketAPI extends cdk.Construct {
-  constructor(scope: cdk.Stack, id: string, props?: DocWebSocketAPIProps) {
+  constructor(scope: cdk.Stack, id: string, props: DocWebSocketAPIProps) {
     super(scope, id);
 
     const connectionIdTable = new dynamodb.Table(this, 'MyWebsocketConnections', {
@@ -54,16 +58,24 @@ export class DocWebSocketAPI extends cdk.Construct {
     connectionIdTable.grantReadWriteData(fnDisconnect);
 
 
-    // const fnGetPDF = new lambda.NodejsFunction(this, "MyWebSocketDocPDFFunction", {
-    //   runtime: Runtime.NODEJS_12_X,
-    //   entry: path.join(__dirname, "..", "api", "webSocket", "getpdf.ts"),
-    //   handler: "handleWebSocket",
-    //   bundling: {
-    //     externalModules: [
-    //       "aws-sdk" // Use the 'aws-sdk' available in the Lambda runtime
-    //     ],
-    //   }
-    // });
+    const fnGetPDF = new lambda.NodejsFunction(this, "MyWebSocketDocPDFFunction", {
+      runtime: Runtime.NODEJS_12_X,
+      entry: path.join(__dirname, "..", "api", "webSocket", "getpdf.ts"),
+      handler: "handleWebSocket",
+      environment: {
+        TABLE_NAME: connectionIdTable.tableName,
+      },
+      bundling: {
+        externalModules: [
+          "aws-sdk" // Use the 'aws-sdk' available in the Lambda runtime
+        ],
+      }
+    });
+    connectionIdTable.grantReadWriteData(fnGetPDF);
+
+    fnGetPDF.addEventSource(new S3EventSource(props.docBucket, {
+      events: [ s3.EventType.OBJECT_CREATED]
+    }));
 
     const webSocketApi = new apig2.WebSocketApi(this, "myDocWebSocket", {
       connectRouteOptions: {
@@ -78,11 +90,11 @@ export class DocWebSocketAPI extends cdk.Construct {
       }
     });
 
-    // webSocketApi.addRoute('getPDF', {
-    //   integration: new LambdaWebSocketIntegration({
-    //     handler: fnGetPDF,
-    //   }),
-    // });
+    webSocketApi.addRoute('getPDF', {
+      integration: new LambdaWebSocketIntegration({
+        handler: fnGetPDF,
+      }),
+    });
 
     const webSocketStage = new WebSocketStage(this, 'mywebstage', {
       webSocketApi,
@@ -106,10 +118,10 @@ export class DocWebSocketAPI extends cdk.Construct {
     //   new PolicyStatement({ actions: ['execute-api:ManageConnections'], resources: [connectionsArns] })
     // );
 
-    // const bucketPermissions = new iam.PolicyStatement();
-    // bucketPermissions.addResources(connectionsArns);
-    // bucketPermissions.addActions(`execute-api:ManageConnections`);
-    // fnGetPDF.addToRolePolicy(bucketPermissions);
+    const bucketPermissions = new iam.PolicyStatement();
+    bucketPermissions.addResources(connectionsArns);
+    bucketPermissions.addActions(`execute-api:ManageConnections`);
+    fnGetPDF.addToRolePolicy(bucketPermissions);
     
   }
 }
