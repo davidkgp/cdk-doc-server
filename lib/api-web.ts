@@ -6,17 +6,28 @@ import { LambdaWebSocketIntegration } from "@aws-cdk/aws-apigatewayv2-integratio
 import { WebSocketStage } from "@aws-cdk/aws-apigatewayv2";
 import * as path from "path";
 import * as iam from '@aws-cdk/aws-iam'
+import { PolicyStatement } from "@aws-cdk/aws-iam";
+import * as dynamodb from '@aws-cdk/aws-dynamodb';
 
 interface DocWebSocketAPIProps {}
 
 export class DocWebSocketAPI extends cdk.Construct {
-  constructor(scope: cdk.Construct, id: string, props?: DocWebSocketAPIProps) {
+  constructor(scope: cdk.Stack, id: string, props?: DocWebSocketAPIProps) {
     super(scope, id);
 
-    const fn = new lambda.NodejsFunction(this, "MyWebSocketDocsFunction", {
+    const connectionIdTable = new dynamodb.Table(this, 'MyWebsocketConnections', {
+      partitionKey: { name: 'connectionId', type: dynamodb.AttributeType.STRING },
+    });
+
+    
+
+    const fnConnect = new lambda.NodejsFunction(this, "MyWebSocketDocConnectFunction", {
       runtime: Runtime.NODEJS_12_X,
-      entry: path.join(__dirname, "..", "api", "webSocket", "index.ts"),
+      entry: path.join(__dirname, "..", "api", "webSocket", "connect.ts"),
       handler: "handleWebSocket",
+      environment: {
+        TABLE_NAME: connectionIdTable.tableName,
+      },
       bundling: {
         externalModules: [
           "aws-sdk" // Use the 'aws-sdk' available in the Lambda runtime
@@ -24,25 +35,56 @@ export class DocWebSocketAPI extends cdk.Construct {
       }
     });
 
+    connectionIdTable.grantReadWriteData(fnConnect);
+
+    const fnDisconnect = new lambda.NodejsFunction(this, "MyWebSocketDocDisconnectFunction", {
+      runtime: Runtime.NODEJS_12_X,
+      entry: path.join(__dirname, "..", "api", "webSocket", "disconnect.ts"),
+      handler: "handleWebSocket",
+      environment: {
+        TABLE_NAME: connectionIdTable.tableName,
+      },
+      bundling: {
+        externalModules: [
+          "aws-sdk" // Use the 'aws-sdk' available in the Lambda runtime
+        ],
+      }
+    });
+
+    connectionIdTable.grantReadWriteData(fnDisconnect);
+
+
+    // const fnGetPDF = new lambda.NodejsFunction(this, "MyWebSocketDocPDFFunction", {
+    //   runtime: Runtime.NODEJS_12_X,
+    //   entry: path.join(__dirname, "..", "api", "webSocket", "getpdf.ts"),
+    //   handler: "handleWebSocket",
+    //   bundling: {
+    //     externalModules: [
+    //       "aws-sdk" // Use the 'aws-sdk' available in the Lambda runtime
+    //     ],
+    //   }
+    // });
+
     const webSocketApi = new apig2.WebSocketApi(this, "myDocWebSocket", {
       connectRouteOptions: {
         integration: new LambdaWebSocketIntegration({
-          handler: fn,
+          handler: fnConnect,
         }),
       },
       disconnectRouteOptions: {
         integration: new LambdaWebSocketIntegration({
-          handler: fn,
+          handler: fnDisconnect,
         }),
-      },
-      defaultRouteOptions: {
-        integration: new LambdaWebSocketIntegration({
-          handler: fn,
-        }),
-      },
+      }
     });
 
-    new WebSocketStage(this, 'mywebstage', {
+    // webSocketApi.addRoute('getPDF', {
+    //   integration: new LambdaWebSocketIntegration({
+    //     handler: fnGetPDF,
+    //   }),
+    // });
+
+    const webSocketStage = new WebSocketStage(this, 'mywebstage', {
       webSocketApi,
       stageName: 'dev',
       autoDeploy: true,
@@ -54,10 +96,20 @@ export class DocWebSocketAPI extends cdk.Construct {
 
     });
 
-    // const websocketPermissions = new iam.PolicyStatement();
-    // websocketPermissions.addResources(`${webSocketApi.}/*`);
-    // websocketPermissions.addActions(`execute-api:ManageConnections`);
-    // fn.addToRolePolicy(websocketPermissions);
+    const connectionsArns = scope.formatArn({
+      service: 'execute-api',
+      resourceName: `${webSocketStage.stageName}/POST/*`,
+      resource: webSocketApi.apiId,
+    });
+
+    // fn.addToRolePolicy(
+    //   new PolicyStatement({ actions: ['execute-api:ManageConnections'], resources: [connectionsArns] })
+    // );
+
+    // const bucketPermissions = new iam.PolicyStatement();
+    // bucketPermissions.addResources(connectionsArns);
+    // bucketPermissions.addActions(`execute-api:ManageConnections`);
+    // fnGetPDF.addToRolePolicy(bucketPermissions);
     
   }
 }
