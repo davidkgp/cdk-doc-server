@@ -22,15 +22,14 @@ export class DocWebSocketAPI extends cdk.Construct {
     const connectionIdTable = new dynamodb.Table(this, 'MyWebsocketConnections', {
       partitionKey: { name: 'connectionId', type: dynamodb.AttributeType.STRING },
     });
-
     
 
-    const fnConnect = new lambda.NodejsFunction(this, "MyWebSocketDocConnectFunction", {
+    const fnConnect = new lambda.NodejsFunction(this, "WebDocConnectFunction", {
       runtime: Runtime.NODEJS_12_X,
       entry: path.join(__dirname, "..", "api", "webSocket", "connect.ts"),
       handler: "handleWebSocket",
       environment: {
-        TABLE_NAME: connectionIdTable.tableName,
+        CONNECTION_TABLE_NAME: connectionIdTable.tableName
       },
       bundling: {
         externalModules: [
@@ -41,12 +40,12 @@ export class DocWebSocketAPI extends cdk.Construct {
 
     connectionIdTable.grantReadWriteData(fnConnect);
 
-    const fnDisconnect = new lambda.NodejsFunction(this, "MyWebSocketDocDisconnectFunction", {
+    const fnDisconnect = new lambda.NodejsFunction(this, "WebDocDisconnectFunction", {
       runtime: Runtime.NODEJS_12_X,
       entry: path.join(__dirname, "..", "api", "webSocket", "disconnect.ts"),
       handler: "handleWebSocket",
       environment: {
-        TABLE_NAME: connectionIdTable.tableName,
+        CONNECTION_TABLE_NAME: connectionIdTable.tableName
       },
       bundling: {
         externalModules: [
@@ -58,12 +57,12 @@ export class DocWebSocketAPI extends cdk.Construct {
     connectionIdTable.grantReadWriteData(fnDisconnect);
 
 
-    const fnGetPDF = new lambda.NodejsFunction(this, "MyWebSocketDocPDFFunction", {
+    const fnGetPDF = new lambda.NodejsFunction(this, "WebDocPDFFunction", {
       runtime: Runtime.NODEJS_12_X,
       entry: path.join(__dirname, "..", "api", "webSocket", "getpdf.ts"),
       handler: "handleWebSocket",
       environment: {
-        TABLE_NAME: connectionIdTable.tableName,
+        CONNECTION_TABLE_NAME: connectionIdTable.tableName
       },
       bundling: {
         externalModules: [
@@ -71,6 +70,8 @@ export class DocWebSocketAPI extends cdk.Construct {
         ],
       }
     });
+
+
     connectionIdTable.grantReadWriteData(fnGetPDF);
 
     fnGetPDF.addEventSource(new S3EventSource(props.docBucket, {
@@ -108,20 +109,17 @@ export class DocWebSocketAPI extends cdk.Construct {
 
     });
 
+
     const connectionsArns = scope.formatArn({
       service: 'execute-api',
       resourceName: `${webSocketStage.stageName}/POST/*`,
       resource: webSocketApi.apiId,
     });
 
-    // fn.addToRolePolicy(
-    //   new PolicyStatement({ actions: ['execute-api:ManageConnections'], resources: [connectionsArns] })
-    // );
-
-    const bucketPermissions = new iam.PolicyStatement();
-    bucketPermissions.addResources(connectionsArns);
-    bucketPermissions.addActions(`execute-api:ManageConnections`);
-    fnGetPDF.addToRolePolicy(bucketPermissions);
+    const webSocketPermissions = new iam.PolicyStatement();
+    webSocketPermissions.addResources(connectionsArns);
+    webSocketPermissions.addActions(`execute-api:ManageConnections`);
+    fnGetPDF.addToRolePolicy(webSocketPermissions);
     
   }
 }
