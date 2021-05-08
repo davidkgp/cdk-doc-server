@@ -104,17 +104,32 @@ export class DocWebSocketAPI extends cdk.Construct {
     });
 
     new cdk.CfnOutput(this,"APiName", {
-      value: webSocketApi.apiEndpoint,
+      value: webSocketStage.url,
       exportName: "WebSocketApiURL"
 
     });
 
+    const url = `${webSocketStage.api.apiId}.execute-api.${webSocketStage.env.region}.amazonaws.com/${webSocketStage.stageName}`;
+
+    fnGetPDF.addEnvironment("RESPONSE_URL",url);
+
+
+    new cdk.CfnOutput(this,"WebSocketTable", {
+      value: connectionIdTable.tableName,
+      exportName: "WebSocketTable"
+
+    });
+
+    
+
+    
 
     const connectionsArns = scope.formatArn({
       service: 'execute-api',
       resourceName: `${webSocketStage.stageName}/POST/*`,
       resource: webSocketApi.apiId,
     });
+    
 
     const webSocketPermissions = new iam.PolicyStatement();
     webSocketPermissions.addResources(connectionsArns);

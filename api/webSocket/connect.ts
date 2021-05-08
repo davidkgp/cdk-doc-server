@@ -28,14 +28,13 @@ export const handleWebSocket = async (event: APIGatewayProxyEvent,context:Contex
       if (!connectionTableName) {
         throw new Error('tableName not specified in process.env.TABLE_NAME');
       }
-      const url = event.requestContext.domainName + '/' + event.requestContext.stage;
 
       const ddb = new AWS.DynamoDB.DocumentClient({ region: process.env.AWS_REGION });
     
       const putParams = {
         TableName: connectionTableName,
         Item: {
-          connectionId: JSON.stringify([event.requestContext.connectionId,url])
+          connectionId: event.requestContext.connectionId
         },
       };
 

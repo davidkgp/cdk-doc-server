@@ -29,12 +29,11 @@ export const handleWebSocket = async (event: APIGatewayProxyEvent,context:Contex
       }
 
       const ddb = new AWS.DynamoDB.DocumentClient({ region: process.env.AWS_REGION });
-      const url = event.requestContext.domainName + '/' + event.requestContext.stage;
     
       const deleteParams = {
         TableName: connectionTableName,
         Key: {
-          connectionId: JSON.stringify([event.requestContext.connectionId,url])
+          connectionId: event.requestContext.connectionId
         },
       };
     

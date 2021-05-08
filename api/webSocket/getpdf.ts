@@ -8,7 +8,7 @@ import { log } from "console";
 import AWS, { S3 } from "aws-sdk";
 
 const connectionTableName = process.env.CONNECTION_TABLE_NAME;
-const urlTableName = process.env.URL_TABLE_NAME;
+const post_url = process.env.RESPONSE_URL;
 const s3 = new S3();
 
 export const handleWebSocket = async (
@@ -21,6 +21,10 @@ export const handleWebSocket = async (
       body: "",
       statusCode: 200,
     };
+
+    const apig = new AWS.ApiGatewayManagementApi({
+      endpoint: post_url,
+    });
 
     if ("Records" in event) {
       console.log("S3 Trigger");
@@ -50,18 +54,15 @@ export const handleWebSocket = async (
 
       connectionData.Items?.map(async ({ connectionId }) => {
 
-        const connectionIdValue = JSON.parse(connectionId)[0];
-        const url = JSON.parse(connectionId)[1];
-        console.log(connectionIdValue);
-        console.log(url);
+
+        console.log(connectionId);
+
 
         try {
-          const apig = new AWS.ApiGatewayManagementApi({
-            endpoint: url,
-          });
+          
           await apig
             .postToConnection({
-              ConnectionId: connectionIdValue,
+              ConnectionId: connectionId,
               Data: JSON.stringify(docList),
             })
             .promise();
@@ -104,10 +105,6 @@ export const handleWebSocket = async (
           })
           .promise();
 
-        const apig = new AWS.ApiGatewayManagementApi({
-          endpoint:
-            event.requestContext.domainName + "/" + event.requestContext.stage,
-        });
 
         await Promise.all(
           (connectionData.Items ?? []).map(async ({ connectionId }) => {
